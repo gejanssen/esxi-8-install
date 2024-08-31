@@ -1,14 +1,14 @@
-#Install Esx 8
+# Install Esx 8
 
 Using ISO image to install:
 ESXi-8.0b-21203435-USBNIC.iso
 
-##SSH
+## SSH
 
 Install the machine, go to the webinterface and enable ssh.
 (insert image here)
 
-###Enable ssh permanently
+### Enable ssh permanently
 
 We need to edit the /etc/rc.local.d/local.sh
 ```
@@ -20,7 +20,7 @@ echo "exit 0" >> /etc/rc.local.d/local.sh
 cat /etc/rc.local.d/local.sh 
 ```
 
-##Name the server
+## Name the server
 
 Setting the hostname of the server
 ```
@@ -28,7 +28,7 @@ esxcli system hostname set --host=kuiper4
 esxcli system hostname set --fqdn=kuiper4.fritz.box
 ```
 
-###DHCP Hostname
+### DHCP Hostname
 
 Making shure that the fritzbox DNS is working
 
@@ -49,7 +49,7 @@ OR:
 echo "send host-name = \"`hostname -s`\";" >> /etc/dhclient-vmk0.conf
 ```
 
-##NTP
+## NTP
 
 Setting NTP 
 ```
@@ -62,7 +62,7 @@ Setting NTP
 ```
 
 
-##SSH-Keys
+## SSH-Keys
 ssh keys are stored in /etc/ssh/keys-[username]
 
 so create a file authorized_keys and set the rights to rw - - and copy the id_rsa.pub of the other user.
@@ -72,7 +72,7 @@ so create a file authorized_keys and set the rights to rw - - and copy the id_rs
 [root@kuiper2:~]
 ```
 
-NFS
+## NFS
 
 Mounting my NFS shares on the diskstation
 
@@ -80,7 +80,9 @@ https://vdc-download.vmware.com/vmwb-repository/dcr-public/0a40d9c5-4d4b-490d-8e
 
 List all known NAS file systems.
 
+```
 esxcli <conn_options> storage nfs list
+```
 
 For each NAS file system, the command lists the mount name, share name, and host name and whether the file system is mounted. 
 If no NAS file systems are available, the system does not return a NAS filesystem and returns to the command prompt.
@@ -89,17 +91,23 @@ Add a new NAS file system to the ESXi host.
 
 Specify the NAS server with --host, the volume to use for the mount with --volume-name, and the share name on the remote system to use for this NAS mount point with --share.
 
+```
 esxcli <conn_options> storage nfs add --host=dir42.eng.vmware.com --share=/<mount_dir> --volume-name=nfsstore-dir42
+```
 
 This command adds an entry to the known NAS file system list and supplies the share name of the new NAS file system. You must supply the host name, share name, and volume name for the new NAS file system.
 
 Add a second NAS file system with read-only access.
 
+```
 esxcli <conn_options> storage nfs add --host=dir42.eng.vmware.com --share=/home --volume-name=FileServerHome2 --readonly
+```
 
 Delete one of the NAS file systems.
 
+```
 esxcli <conn_options> storage nfs remove --volume-name=FileServerHome2
+```
 
 This command unmounts the NAS file system and removes it from the list of known file systems. 
 
@@ -114,7 +122,7 @@ Unable to create new NAS volume.  192.168.1.22:/volume1/vmnfsbackup is already e
 [root@kuiper2:~] 
 ```
 
-##Autostart machines
+## Autostart machines
 
 Enable autostart for autostart the most important virtual machines
 
@@ -130,7 +138,7 @@ vim-cmd hostsvc/autostartmanager/update_autostartentry 1
 ```
 
 
-##Power settings
+## Power settings
 
 Enable powersave settings
 
@@ -160,7 +168,7 @@ Host power management policy
 [root@kuiper3:~]
 ```
 
-##License
+## License
 
 Enable the correct license
 
@@ -183,9 +191,9 @@ Enable the correct license
 
 
 
-#Maintenance
+# Maintenance
 
-##Update Esx
+## Update Esx
 
 Unfortunately I did not get it to work and since VMware has been bought by Broadcom.....
 
@@ -197,7 +205,7 @@ Unfortunately I did not get it to work and since VMware has been bought by Broad
 [root@localhost:/vmfs/volumes/66ca1182-f7e1fe33-483a-9c2dcd535edd]
 ```
 
-##Smartd
+## Smartd
 
 Information about the disks via smartctl on esx (smartd)
 
