@@ -67,6 +67,7 @@ ssh keys are stored in /etc/ssh/keys-[username]
 
 so create a file authorized_keys and set the rights to rw - - and copy the id_rsa.pub of the other user.
 
+```
 [root@kuiper2:~] ls -l /etc/ssh/keys-root/authorized_keys 
 -rw------T    1 root     root           393 Jan 18 11:50 /etc/ssh/keys-root/authorized_keys
 [root@kuiper2:~]
