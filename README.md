@@ -20,6 +20,13 @@ echo "exit 0" >> /etc/rc.local.d/local.sh
 cat /etc/rc.local.d/local.sh 
 ```
 
+### Disable SSH warning on webinterface
+Login to the server and enter the following:
+
+```
+esxcli system settings advanced set -o /UserVars/SuppressShellWarning -i 1
+```
+
 ## Name the server
 
 Setting the hostname of the server
@@ -28,9 +35,10 @@ esxcli system hostname set --host=kuiper4
 esxcli system hostname set --fqdn=kuiper4.fritz.box
 ```
 
+
 ### DHCP Hostname
 
-Making shure that the fritzbox DNS is working
+Making sure that the fritzbox DNS is working:
 
 ```
 [root@kuiper4:~] echo "send host-name = \"`hostname -s`\";" >> /etc/dhclient-vmk0.conf
@@ -47,6 +55,8 @@ send host-name = "kuiper2";
 OR:
 ```
 echo "send host-name = \"`hostname -s`\";" >> /etc/dhclient-vmk0.conf
+echo "send host-name = \"`hostname -s`\";" >> /etc/dhclient6-vmk0.conf
+
 ```
 
 ## NTP
@@ -64,6 +74,8 @@ Setting NTP
 
 ## SSH-Keys
 ssh keys are stored in /etc/ssh/keys-[username]
+
+Please mind: This only works for RSA and XXX keys. Not for EDSA
 
 so create a file authorized_keys and set the rights to rw - - and copy the id_rsa.pub of the other user.
 
@@ -137,7 +149,10 @@ vim-cmd hostsvc/autostartmanager/enable_autostart true
 vim-cmd hostsvc/autostartmanager/update_autostartentry $VMId $StartAction $StartDelay $StartOrder $StopAction $StopDelay $WaitForHeartbeat
 vim-cmd hostsvc/autostartmanager/update_autostartentry 1 
 ```
-
+## Enable USB NIC
+```
+esxcli system module parameters set -p "usbBusFullScanOnBootEnabled=1" -m vmkusb_nic_fling
+```
 
 ## Power settings
 
@@ -197,6 +212,30 @@ Enable the correct license
 ## Update Esx
 
 Unfortunately I did not get it to work and since VMware has been bought by Broadcom.....
+
+### Show current version
+```
+[root@kuiper:~] vmware -l
+VMware ESXi 6.7.0 Update 3
+[root@kuiper:~]
+```
+And build number
+```
+[root@kuiper1:~] vmware -v
+VMware ESXi 7.0.3 build-20328353
+[root@kuiper1:~]
+```
+
+### First set the server in maintenance
+
+```
+esxcli system maintenanceMode set -e true
+```
+And exit maintenance
+```
+esxcli system maintenanceMode set -e false
+```
+
 
 ```
 [root@localhost:/vmfs/volumes/66ca1182-f7e1fe33-483a-9c2dcd535edd] esxcli software vib update -d /vmfs/volumes/NVME/VMware-ESXi-8.0U2-22380479-depot.zip
@@ -331,3 +370,78 @@ Sector Reallocation Event Count  253    36         253    0
 Uncorrectable Sector Count       253    0          253    0
 [root@kuiper4:~]
 ```
+
+
+## Backup
+General Idea:
+  Make snapshot
+  copy server
+  remove snapshot
+
+### Get VM IDs
+```
+[root@kuiper:~] vim-cmd vmsvc/getallvms
+Vmid     Name                    File                     Guest OS       Version         Annotation       
+2      xx         [datastore1] xx/xx.vmx               rhel8_64Guest     vmx-14                           
+3      makemake   [datastore1] makemake/makemake.vmx   centos8_64Guest   vmx-14    Rocky linux 8
+autostart
+[root@kuiper:~] 
+```
+
+### Create snapshot
+```
+vim-cmd vmsvc/snapshot.create VMID snapshotName description includeMemory quiesced
+
+vim-cmd vmsvc/snapshot.create 5 backup includeMemory quiesced
+
+```
+
+### Show snapshots
+```
+
+[root@kuiper:~] vim-cmd vmsvc/snapshot.get 3
+Get Snapshot:
+|-ROOT
+--Snapshot Name        : snapshot_backup
+--Snapshot Id        : 5
+--Snapshot Desciption  : 0
+--Snapshot Created On  : 12/17/2022 15:34:49
+--Snapshot State       : powered on
+[root@kuiper:~]
+```
+
+### Make backup
+```
+[root@kuiper:~] cp /vmfs/volumes/datastore1/Haumea/* /vmfs/volumes/nfsbackup/haumea/
+cp: can't open '/vmfs/volumes/datastore1/Haumea/Haumea-000001-sesparse.vmdk': Device or resource busy
+cp: can't open '/vmfs/volumes/datastore1/Haumea/Haumea-2967b2b4.vswp': Device or resource busy
+cp: can't open '/vmfs/volumes/datastore1/Haumea/Haumea.vmx.lck': Device or resource busy
+cp: can't open '/vmfs/volumes/datastore1/Haumea/vmx-Haumea-694661812-1.vswp': Device or resource busy
+[root@kuiper:~]
+```
+
+
+### Remove snapshot
+```
+
+[root@kuiper:~] vim-cmd vmsvc/snapshot.removeall 3
+Remove All Snapshots:
+[root@kuiper:~]
+```
+
+### All at once
+```
+vim-cmd vmsvc/snapshot.create 3 "snapshot_backup" 0 1
+cp /vmfs/volumes/datastore1/Haumea/* /vmfs/volumes/nfsbackup/haumea/
+vim-cmd vmsvc/snapshot.removeall 3
+```
+
+### Restore / Register VM
+
+```
+[root@kuiper1:/vmfs/volumes/63e4e9c9-658b983b-d375-00e04c4021e7/truenas] vim-cmd solo/registervm /vmfs/volumes/datastore
+1/truenas/truenas.vmx
+```
+
+
+
